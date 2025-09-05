@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Training Video</title>
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    // Helper: read pseudonym (?u=...) from URL
+    function getParam(name) {
+      const params = new URLSearchParams(location.search);
+      return params.get(name);
+    }
+    const viewerId = getParam('u') || 'unknown';
+
+    // GA setup
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-XXXXXXXXXX', {
+      user_id: viewerId,
+      user_properties: { viewer_id: viewerId }
+    });
+  </script>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body>
+  <h2>Please watch the video below</h2>
+  <div id="player"></div>
+
+  <script>
+    let player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        width: 800,
+        height: 450,
+        videoId: 'VIDEO_ID_HERE', // Replace with your YouTube video ID
+        playerVars: { 'playsinline': 1, 'enablejsapi': 1 },
+        events: { 'onStateChange': onPlayerStateChange }
+      });
+    }
+
+    let firstPlaySent = false;
+    let completeSent = false;
+
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING && !firstPlaySent) {
+        firstPlaySent = true;
+        gtag('event', 'video_play', {
+          event_category: 'video',
+          event_label: 'training_video',
+          video_id: 'VIDEO_ID_HERE'
+        });
+      }
+      if (event.data === YT.PlayerState.PAUSED) {
+        const t = Math.floor(player.getCurrentTime());
+        gtag('event', 'video_pause', {
+          event_category: 'video',
+          event_label: 'training_video',
+          video_id: 'VIDEO_ID_HERE',
+          seconds: t
+        });
+      }
+      if (event.data === YT.PlayerState.ENDED && !completeSent) {
+        completeSent = true;
+        gtag('event', 'video_complete', {
+          event_category: 'video',
+          event_label: 'training_video',
+          video_id: 'VIDEO_ID_HERE'
+        });
+      }
+    }
+  </script>
+</body>
+</html>
