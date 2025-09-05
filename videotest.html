@@ -38,7 +38,7 @@
       player = new YT.Player('player', {
         width: 800,
         height: 450,
-        videoId: 'VIDEO_ID_HERE', // Replace with your YouTube video ID
+        videoId: 'duUnsx__iOQ', // Replace with your YouTube video ID
         playerVars: { 'playsinline': 1, 'enablejsapi': 1 },
         events: { 'onStateChange': onPlayerStateChange }
       });
@@ -53,7 +53,7 @@
         gtag('event', 'video_play', {
           event_category: 'video',
           event_label: 'training_video',
-          video_id: 'VIDEO_ID_HERE'
+          video_id: 'duUnsx__iOQ'
         });
       }
       if (event.data === YT.PlayerState.PAUSED) {
@@ -61,7 +61,7 @@
         gtag('event', 'video_pause', {
           event_category: 'video',
           event_label: 'training_video',
-          video_id: 'VIDEO_ID_HERE',
+          video_id: 'duUnsx__iOQ',
           seconds: t
         });
       }
@@ -70,7 +70,7 @@
         gtag('event', 'video_complete', {
           event_category: 'video',
           event_label: 'training_video',
-          video_id: 'VIDEO_ID_HERE'
+          video_id: 'duUnsx__iOQ'
         });
       }
     }
@@ -78,3 +78,4 @@
 </body>
 
 </html>
+
