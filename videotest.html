@@ -2,9 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Training Video</title>
+  <title>Training Video — Diagnostics</title>
 
-  <!-- Google Analytics 4 -->
+  <!-- GA4 (keep your real Measurement ID) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-27X1JYM2LX"></script>
   <script>
     // Helper: read pseudonym (?u=...) from URL
@@ -19,55 +19,138 @@
     function gtag(){ dataLayer.push(arguments); }
     gtag('js', new Date());
 
+    // Set user_id (OK in GA4). For user properties, GA recommends a separate 'set'.
     gtag('config', 'G-27X1JYM2LX', {
-      user_id: viewerId,
-      user_properties: { viewer_id: viewerId }
+      user_id: viewerId
     });
+    gtag('set', 'user_properties', { viewer_id: viewerId });
+
+    // Simple helper to send and log GA events
+    function sendGA(evt, params) {
+      try {
+        gtag('event', evt, params || {});
+        log(`Sent GA event: ${evt} ${params ? JSON.stringify(params) : ''}`);
+      } catch (e) {
+        log('ERROR sending GA event: ' + e.message);
+        console.error(e);
+      }
+    }
   </script>
 
   <!-- YouTube IFrame API -->
   <script src="https://www.youtube.com/iframe_api"></script>
+
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+    #log { background: #f7f7f7; border: 1px solid #ddd; padding: 10px; white-space: pre-wrap; min-height: 80px; }
+    .row { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+    button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; }
+    .hint { color: #555; font-size: 0.95rem; }
+    .ok { color: #006400; }
+    .warn { color: #9a5b00; }
+    .bad { color: #8b0000; }
+  </style>
 </head>
 <body>
-  <h2>Please watch the video below</h2>
+  <h1>Training Video</h1>
+  <p class="hint">Pseudonym detected: <strong id="who">…</strong></p>
+
+  <div class="row" style="margin:12px 0 18px;">
+    <button onclick="sendGA('video_play',{event_category:'test',event_label:'manual_test'});">
+      Send manual test event (video_play)
+    </button>
+    <span class="hint">Use this to confirm GA4 is connected (check <em>Reports → Realtime</em>).</span>
+  </div>
+
   <div id="player"></div>
 
+  <h3>Diagnostics</h3>
+  <div id="log"></div>
+
   <script>
+    document.getElementById('who').textContent = viewerId;
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      el.textContent += `[${time}] ${msg}\n`;
+      console.log(msg);
+    }
+
+    // Check core resources
+    (function sanityChecks(){
+      // GA script tag present?
+      const hasGA = !!document.querySelector('script[src*="googletagmanager.com/gtag/js"]');
+      log(hasGA ? 'GA script tag present ✅' : 'GA script tag missing ❌');
+
+      // YouTube API script tag present?
+      const hasYT = !!document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+      log(hasYT ? 'YouTube IFrame API present ✅' : 'YouTube IFrame API missing ❌');
+
+      // Warn if running from file:// (not your case on GitHub Pages, but useful)
+      if (location.protocol === 'file:') {
+        log('Running from file:// — YouTube API may not initialize correctly. Use https hosting. ⚠️');
+      }
+    })();
+
+    // YouTube Player
     let player;
+    let firstPlaySent = false;
+    let completeSent = false;
+
+    // Defensive: mark when API ready is called
+    let ytReadyCalled = false;
+
     function onYouTubeIframeAPIReady() {
+      ytReadyCalled = true;
+      log('YouTube API ready ✅ — building player...');
       player = new YT.Player('player', {
         width: 800,
         height: 450,
-        videoId: 'duUnsx__iOQ', // Replace with your YouTube video ID
-        playerVars: { 'playsinline': 1, 'enablejsapi': 1 },
+        videoId: 'duUnsx__iOQ',
+        playerVars: {
+          playsinline: 1,
+          enablejsapi: 1,
+          origin: location.origin     // recommended
+        },
         events: { 'onStateChange': onPlayerStateChange }
       });
     }
 
-    let firstPlaySent = false;
-    let completeSent = false;
+    // Catch a rare case where API never calls back
+    setTimeout(() => {
+      if (!ytReadyCalled) {
+        log('YouTube API did not call onYouTubeIframeAPIReady within 5s. ❌ Check Network for 404 on iframe_api.');
+      }
+    }, 5000);
 
     function onPlayerStateChange(event) {
+      log('YT state: ' + event.data);
+
       if (event.data === YT.PlayerState.PLAYING && !firstPlaySent) {
         firstPlaySent = true;
-        gtag('event', 'video_play', {
+        sendGA('video_play', {
           event_category: 'video',
           event_label: 'training_video',
           video_id: 'duUnsx__iOQ'
         });
       }
       if (event.data === YT.PlayerState.PAUSED) {
-        const t = Math.floor(player.getCurrentTime());
-        gtag('event', 'video_pause', {
-          event_category: 'video',
-          event_label: 'training_video',
-          video_id: 'duUnsx__iOQ',
-          seconds: t
-        });
+        try {
+          const t = Math.floor(player.getCurrentTime());
+          sendGA('video_pause', {
+            event_category: 'video',
+            event_label: 'training_video',
+            video_id: 'duUnsx__iOQ',
+            seconds: t
+          });
+        } catch (e) {
+          log('Could not get current time: ' + e.message);
+        }
       }
       if (event.data === YT.PlayerState.ENDED && !completeSent) {
         completeSent = true;
-        gtag('event', 'video_complete', {
+        sendGA('video_complete', {
           event_category: 'video',
           event_label: 'training_video',
           video_id: 'duUnsx__iOQ'
@@ -76,6 +159,4 @@
     }
   </script>
 </body>
-
 </html>
-
